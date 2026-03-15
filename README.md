@@ -364,6 +364,6 @@ python-multipart>=0.0.6
 
 <div align="center">
 
-© 2025 **MyroSoft** · PromptForge v2.1
+© 2026 **MyroSoft** · PromptForge v2.1
 
 </div>
