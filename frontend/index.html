@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PromptForge — Конструктор ИИ-промптов</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+<!-- ░░ Фоновые слои ░░ -->
+<div class="bg-layer" aria-hidden="true">
+  <div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div>
+  <canvas id="starfield"></canvas>
+  <div class="grid-overlay"></div>
+</div>
+
+<!-- ░░ Шапка ░░ -->
+<header class="header" role="banner">
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-gem" aria-hidden="true">✦</span>
+      <span class="logo-text">PromptForge</span>
+      <span class="logo-tag">AI</span>
+    </div>
+    <nav class="header-nav">
+      <div class="selection-summary" id="summary-bar" title="Прогресс заполнения">
+        <span class="summary-dot" id="dot-style"    title="Стиль"></span>
+        <span class="summary-dot" id="dot-gender"   title="Пол"></span>
+        <span class="summary-dot" id="dot-hair"     title="Волосы"></span>
+        <span class="summary-dot" id="dot-face"     title="Лицо"></span>
+        <span class="summary-dot" id="dot-body"     title="Тело"></span>
+        <span class="summary-dot" id="dot-clothes"  title="Одежда"></span>
+        <span class="summary-dot" id="dot-action"   title="Действие"></span>
+        <span class="summary-dot" id="dot-location" title="Локация"></span>
+        <span class="summary-dot" id="dot-camera"   title="Ракурс"></span>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="resetAll()">↺ Сбросить</button>
+    </nav>
+  </div>
+</header>
+
+<!-- ░░ Загрузка ░░ -->
+<div class="loading-screen" id="loading-screen">
+  <div class="loading-ring"></div>
+  <p class="loading-text">Загрузка пресетов…</p>
+</div>
+
+<!-- ░░ Ошибка ░░ -->
+<div class="error-banner hidden" id="error-banner" role="alert">
+  <span class="error-icon">⚠</span>
+  <span id="error-message">Не удалось подключиться к серверу.</span>
+</div>
+
+<!-- ░░ Основной контент ░░ -->
+<main class="main" id="main-content" aria-hidden="true">
+
+  <!-- ШАГ 1 — Стиль -->
+  <section class="section">
+    <div class="sec-head">
+      <div class="step-pill">01</div>
+      <div>
+        <h2 class="sec-title">Выбор стиля</h2>
+        <p class="sec-sub">Основа каждой генерации</p>
+      </div>
+    </div>
+    <div class="style-grid" id="style-grid"></div>
+  </section>
+
+  <!-- ШАГ 2 — Персонаж -->
+  <section class="section">
+    <div class="sec-head">
+      <div class="step-pill">02</div>
+      <div>
+        <h2 class="sec-title">Конструктор персонажа</h2>
+        <p class="sec-sub">Настройте каждую деталь своего персонажа</p>
+      </div>
+    </div>
+
+    <!-- Пол -->
+    <div class="cat-block">
+      <div class="cat-label-row">
+        <span class="cat-label-text"><span class="cat-icon">⊹</span> Пол</span>
+        <button class="add-custom-btn" onclick="openModal('gender')">＋ Добавить</button>
+      </div>
+      <div class="cards-grid compact" id="grid-gender"></div>
+    </div>
+
+    <!-- Возраст -->
+    <div class="cat-block">
+      <div class="cat-label-row">
+        <span class="cat-label-text"><span class="cat-icon">◷</span> Возраст</span>
+        <button class="add-custom-btn" onclick="openModal('age')">＋ Добавить</button>
+      </div>
+      <div class="cards-grid compact" id="grid-age"></div>
+    </div>
+
+    <!-- Волосы (аккордеон) -->
+    <div class="cat-block accordion">
+      <div class="cat-label-row accordion-btn" onclick="toggleAccordion('hair')" role="button" tabindex="0" aria-expanded="true" aria-controls="acc-hair" onkeydown="if(event.key==='Enter')toggleAccordion('hair')">
+        <span class="cat-label-text"><span class="cat-icon">✿</span> Волосы</span>
+        <span class="acc-chevron open" id="chev-hair">▾</span>
+      </div>
+      <div class="acc-body open" id="acc-hair">
+        <div class="subcat">
+          <div class="subcat-header">
+            <span class="subcat-label">Цвет волос</span>
+            <button class="add-custom-btn add-custom-sm" onclick="openModal('hair.hair_color')">＋ Добавить</button>
+          </div>
+          <div class="swatch-row" id="grid-hair_color"></div>
+        </div>
+        <div class="subcat">
+          <div class="subcat-header">
+            <span class="subcat-label">Стиль волос</span>
+            <button class="add-custom-btn add-custom-sm" onclick="openModal('hair.hair_style')">＋ Добавить</button>
+          </div>
+          <div class="cards-grid compact" id="grid-hair_style"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Лицо -->
+    <div class="cat-block">
+      <div class="cat-label-row">
+        <span class="cat-label-text"><span class="cat-icon">◯</span> Лицо <span class="multi-badge">Мульти-выбор</span></span>
+        <button class="add-custom-btn" onclick="openModal('face')">＋ Добавить</button>
+      </div>
+      <div class="cards-grid" id="grid-face"></div>
+    </div>
+
+    <!-- Тело (аккордеон) -->
+    <div class="cat-block accordion">
+      <div class="cat-label-row accordion-btn" onclick="toggleAccordion('body')" role="button" tabindex="0" aria-expanded="true" aria-controls="acc-body" onkeydown="if(event.key==='Enter')toggleAccordion('body')">
+        <span class="cat-label-text"><span class="cat-icon">⟡</span> Тело</span>
+        <span class="acc-chevron open" id="chev-body">▾</span>
+      </div>
+      <div class="acc-body open" id="acc-body"><!-- динамически --></div>
+    </div>
+
+    <!-- Одежда (аккордеон) -->
+    <div class="cat-block accordion">
+      <div class="cat-label-row accordion-btn" onclick="toggleAccordion('clothes')" role="button" tabindex="0" aria-expanded="true" aria-controls="acc-clothes" onkeydown="if(event.key==='Enter')toggleAccordion('clothes')">
+        <span class="cat-label-text"><span class="cat-icon">✤</span> Одежда</span>
+        <span class="acc-chevron open" id="chev-clothes">▾</span>
+      </div>
+      <div class="acc-body open" id="acc-clothes"><!-- динамически --></div>
+    </div>
+  </section>
+
+  <!-- ШАГ 3 — Действие -->
+  <section class="section">
+    <div class="sec-head">
+      <div class="step-pill">03</div>
+      <div>
+        <h2 class="sec-title">Действие</h2>
+        <p class="sec-sub">Что делает ваш персонаж?</p>
+      </div>
+    </div>
+    <div class="cat-block">
+      <div class="cat-label-row" style="margin-bottom:14px">
+        <span class="cat-label-text"></span>
+        <button class="add-custom-btn" onclick="openModal('action')">＋ Добавить</button>
+      </div>
+      <div class="cards-grid" id="grid-action"></div>
+    </div>
+  </section>
+
+  <!-- ШАГ 4 — Локация -->
+  <section class="section">
+    <div class="sec-head">
+      <div class="step-pill">04</div>
+      <div>
+        <h2 class="sec-title">Локация</h2>
+        <p class="sec-sub">Где происходит сцена?</p>
+      </div>
+    </div>
+    <div class="cat-block">
+      <div class="cat-label-row" style="margin-bottom:14px">
+        <span class="cat-label-text"></span>
+        <button class="add-custom-btn" onclick="openModal('location')">＋ Добавить</button>
+      </div>
+      <div class="cards-grid" id="grid-location"></div>
+    </div>
+  </section>
+
+  <!-- ШАГ 5 — Ракурс -->
+  <section class="section">
+    <div class="sec-head">
+      <div class="step-pill">05</div>
+      <div>
+        <h2 class="sec-title">Ракурс камеры</h2>
+        <p class="sec-sub">Угол и дистанция съёмки</p>
+      </div>
+    </div>
+    <div class="cat-block">
+      <div class="cat-label-row" style="margin-bottom:14px">
+        <span class="cat-label-text"></span>
+        <button class="add-custom-btn" onclick="openModal('camera')">＋ Добавить</button>
+      </div>
+      <div class="cards-grid" id="grid-camera"></div>
+    </div>
+  </section>
+
+  <!-- ШАГ 6 — Дополнительно -->
+  <section class="section">
+    <div class="sec-head">
+      <div class="step-pill">06</div>
+      <div>
+        <h2 class="sec-title">Доп. детали</h2>
+        <p class="sec-sub">Освещение, настройки камеры, теги качества…</p>
+      </div>
+    </div>
+    <div class="cat-block" style="padding-bottom:4px">
+      <textarea id="custom-text" class="extra-textarea"
+        placeholder="Например: cinematic lighting, bokeh, film grain, 4K render, volumetric fog…"
+        rows="3" oninput="updatePrompt()" aria-label="Дополнительные детали промпта"></textarea>
+    </div>
+  </section>
+
+  <div style="height:250px" aria-hidden="true"></div>
+</main>
+
+<!-- ░░ Панель промпта (фиксированная снизу) ░░ -->
+<div class="prompt-bar" id="prompt-bar">
+  <div class="prompt-bar-inner">
+    <div class="prompt-toprow">
+      <div class="prompt-bar-label"><span class="prompt-gem">✦</span> Готовый промпт</div>
+      <span class="word-count" id="word-count">0 слов</span>
+      <div class="prompt-toprow-actions">
+        <button class="btn btn-ghost btn-sm" onclick="resetAll()">↺ Сбросить</button>
+        <button class="btn btn-primary" onclick="copyPrompt()" id="copy-btn">
+          <span id="copy-icon">⎘</span>
+          <span id="copy-label">Копировать</span>
+        </button>
+      </div>
+    </div>
+    <textarea id="prompt-output" class="prompt-output" readonly
+      placeholder="Промпт будет формироваться здесь по мере выбора параметров…"></textarea>
+  </div>
+</div>
+
+<!-- ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+     МОДАЛЬНОЕ ОКНО — Добавить свою опцию
+░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ -->
+<div class="modal-overlay hidden" id="modal-overlay" onclick="handleOverlayClick(event)" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal-card" id="modal-card">
+
+    <div class="modal-header">
+      <h3 class="modal-title" id="modal-title">Добавить свою опцию</h3>
+      <button class="modal-close" onclick="closeModal()" aria-label="Закрыть">✕</button>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- Категория -->
+      <div class="form-field">
+        <label class="form-label" for="modal-category">Категория</label>
+        <div class="select-wrap">
+          <select id="modal-category" class="form-select" onchange="onCategoryChange()"></select>
+          <span class="select-arrow">▾</span>
+        </div>
+      </div>
+
+      <!-- Название -->
+      <div class="form-field">
+        <label class="form-label" for="modal-label">Название <span class="form-req">*</span></label>
+        <input type="text" id="modal-label" class="form-input" placeholder="Напр.: Кибер-волосы" maxlength="60" />
+      </div>
+
+      <!-- Описание -->
+      <div class="form-field">
+        <label class="form-label" for="modal-desc">Описание</label>
+        <input type="text" id="modal-desc" class="form-input" placeholder="Краткое описание на карточке" maxlength="100" />
+      </div>
+
+      <!-- Промпт -->
+      <div class="form-field">
+        <label class="form-label" for="modal-prompt">Текст промпта <span class="form-req">*</span></label>
+        <textarea id="modal-prompt" class="form-textarea" rows="2"
+          placeholder="Напр.: cyberpunk neon hair, holographic strands"></textarea>
+        <span class="form-hint">Этот фрагмент будет добавлен к итоговому промпту.</span>
+      </div>
+
+      <!-- Иконка -->
+      <div class="form-field">
+        <label class="form-label" for="modal-icon">Иконка <span class="form-hint-inline">(если нет изображения)</span></label>
+        <input type="text" id="modal-icon" class="form-input form-input-sm" placeholder="✦" maxlength="4" />
+      </div>
+
+      <!-- Цвет (только для hair_color) -->
+      <div class="form-field" id="field-color" style="display:none">
+        <label class="form-label" for="modal-color">Цвет свотча</label>
+        <div class="color-row">
+          <input type="color" id="modal-color" class="form-color" value="#8b5cf6" />
+          <span class="color-preview-text" id="color-preview-text">#8b5cf6</span>
+        </div>
+      </div>
+
+      <!-- Загрузка изображения -->
+      <div class="form-field">
+        <label class="form-label">Изображение <span class="form-hint-inline">(необязательно, макс. 8 МБ)</span></label>
+        <div class="upload-area" id="upload-area"
+             onclick="document.getElementById('modal-file-input').click()"
+             ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)"
+             role="button" tabindex="0" onkeydown="if(event.key==='Enter')document.getElementById('modal-file-input').click()">
+          <input type="file" id="modal-file-input" accept="image/*" style="display:none" onchange="handleFileSelect(event)" />
+          <div class="upload-idle" id="upload-idle">
+            <span class="upload-icon">⬆</span>
+            <span class="upload-text">Нажмите или перетащите файл</span>
+            <span class="upload-hint">JPG · PNG · WebP · GIF · до 8 МБ</span>
+          </div>
+          <div class="upload-preview hidden" id="upload-preview">
+            <img id="upload-preview-img" src="" alt="Превью" />
+            <button class="upload-remove-btn" onclick="removeUploadedImage(event)" title="Удалить изображение">✕</button>
+          </div>
+          <div class="upload-uploading hidden" id="upload-uploading">
+            <div class="mini-ring"></div>
+            <span>Загрузка…</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /modal-body -->
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Отмена</button>
+      <button class="btn btn-primary" onclick="submitCustomOption()" id="modal-save-btn">
+        <span id="modal-save-spinner" class="hidden"><div class="mini-ring"></div></span>
+        Сохранить
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ░░ Уведомления ░░ -->
+<div class="toast-wrap" id="toast-wrap" aria-live="polite" aria-atomic="true"></div>
+
+<!-- ░░ Footer ░░ -->
+<footer class="site-footer">
+  <span class="footer-copy">© <span id="footer-year"></span> MyroSoft. Все права защищены.</span>
+  <span class="footer-sep">·</span>
+  <span class="footer-brand">PromptForge <span class="footer-version">v2.1</span></span>
+</footer>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
